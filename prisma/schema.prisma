@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  title  String
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model User {
+  id    String   @id @default(auto()) @map("_id") @db.ObjectId
+  email String? @unique
+  password String?
+
+  posts Post[]
+  files File[]  // Bidirectional relation
+  messages Message[]
+  prompts Prompt[]
+}
+
+model File {
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  uploadStatus UploadStatus @default(PENDING)
+  url          String
+  key          String       @unique
+
+  Message Message[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  userId       String
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id   String @id @default(cuid()) @map("_id")
+  text String
+
+  isUserMessage Boolean
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  User   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String?
+
+  File   File?   @relation(fields: [fileId], references: [id])
+  fileId String?
+}
+
+model Prompt {
+  id    String @id @default(cuid()) @map("_id")
+  count Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  User   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String?
+}
+
+enum UploadStatus {
+  PENDING
+  SUCCESS
+  FAILURE
+}
